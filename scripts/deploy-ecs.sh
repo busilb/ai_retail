@@ -5,6 +5,7 @@ set -euo pipefail
 
 REPO="https://github.com/busilb/ai_retail.git"
 APP_DIR="/opt/ai_retail"
+APP_PORT="${APP_PORT:-3000}"
 
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
@@ -75,19 +76,21 @@ else
 fi
 
 # ============ 4. 生成 env ============
-step 4 6 "生成 .env"
-if [ ! -f .env ]; then
-    AUTH_SECRET=$(openssl rand -base64 32)
-    cat > .env <<EOF
+step 4 6 "生成 .env (宿主端口=${APP_PORT})"
+# 总是重写 APP_PORT，但 AUTH_SECRET 只在首次生成
+EXISTING_AUTH=""
+if [ -f .env ] && grep -q '^AUTH_SECRET=' .env; then
+    EXISTING_AUTH=$(grep '^AUTH_SECRET=' .env | head -1 | cut -d= -f2-)
+fi
+AUTH_SECRET="${EXISTING_AUTH:-$(openssl rand -base64 32)}"
+cat > .env <<EOF
 AUTH_SECRET=${AUTH_SECRET}
 DB_PATH=/app/data/jinshou.db
+APP_PORT=${APP_PORT}
 # 想接 Claude 真模型把下面取消注释填 key（不填走规则引擎 mock 演示一样能跑）
 # ANTHROPIC_API_KEY=sk-ant-...
 EOF
-    echo "  ✓ 已生成 /opt/ai_retail/.env (含随机 AUTH_SECRET)"
-else
-    echo "  · .env 已存在，跳过"
-fi
+echo "  ✓ .env 已就绪 (AUTH_SECRET 保留 / APP_PORT=${APP_PORT})"
 
 # ============ 5. build + up ============
 step 5 6 "Docker build + up（首次 build 需要 5-10 分钟，请耐心）"
@@ -98,10 +101,10 @@ docker compose up -d
 
 # ============ 6. 健康检查 ============
 step 6 6 "等待服务起来 + 健康检查"
-echo -n "  · 等待 Next 启动 "
+echo -n "  · 等待 Next 启动 (本机 :${APP_PORT}) "
 for i in $(seq 1 45); do
-    if curl -fsS http://localhost:3000/login >/dev/null 2>&1; then
-        echo " ✓ 就绪 (用时 ${i}*2s)"
+    if curl -fsS "http://localhost:${APP_PORT}/login" >/dev/null 2>&1; then
+        echo " ✓ 就绪 (用时 $((i*2))s)"
         break
     fi
     echo -n "."
@@ -117,10 +120,10 @@ echo -e "${GREEN}║  ✅ 部署完成${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo
 if [ -n "$PUBLIC_IP" ]; then
-    echo -e "  🌐 公网访问:  ${YELLOW}http://${PUBLIC_IP}:3000${NC}"
+    echo -e "  🌐 公网访问:  ${YELLOW}http://${PUBLIC_IP}:${APP_PORT}${NC}"
 fi
 if [ -n "$PRIVATE_IP" ]; then
-    echo -e "  🔒 内网访问:  ${YELLOW}http://${PRIVATE_IP}:3000${NC}"
+    echo -e "  🔒 内网访问:  ${YELLOW}http://${PRIVATE_IP}:${APP_PORT}${NC}"
 fi
 echo -e "  👤 测试账号:  boss / director / manager / staff"
 echo -e "  🔑 密码:      ${YELLOW}demo2026${NC}"
