@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 import { Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,11 +27,10 @@ const NAV = [
 
 export function TopNav({
   user,
-  signOutAction,
 }: {
   user: { name: string; username: string; role: Role };
-  signOutAction: () => void;
 }) {
+  const doLogout = () => signOut({ callbackUrl: "/login" });
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isActive = (href: string) =>
@@ -75,27 +75,23 @@ export function TopNav({
         <div className="ml-auto hidden md:flex items-center gap-3">
           <Badge variant="outline" className="text-[10px]">演示数据</Badge>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2">
-                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-xs flex items-center justify-center font-medium">
-                  {user.name.slice(0, 1)}
-                </div>
-                <div className="text-left leading-tight">
-                  <div className="text-xs font-medium">{user.name}</div>
-                  <div className="text-[10px] text-slate-500">{ROLE_LABEL[user.role]}</div>
-                </div>
-              </Button>
+            <DropdownMenuTrigger
+              className="inline-flex items-center gap-2 h-8 rounded-md px-2 hover:bg-slate-100 transition-colors data-[popup-open]:bg-slate-100"
+            >
+              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white text-xs flex items-center justify-center font-medium">
+                {user.name.slice(0, 1)}
+              </div>
+              <div className="text-left leading-tight">
+                <div className="text-xs font-medium">{user.name}</div>
+                <div className="text-[10px] text-slate-500">{ROLE_LABEL[user.role]}</div>
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel>{user.username}@jinshou.ai</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <form action={signOutAction}>
-                <DropdownMenuItem asChild>
-                  <button type="submit" className="w-full cursor-pointer">
-                    <LogOut className="h-4 w-4 mr-2" /> 退出登录
-                  </button>
-                </DropdownMenuItem>
-              </form>
+              <DropdownMenuItem onClick={doLogout} className="cursor-pointer">
+                <LogOut className="h-4 w-4 mr-2" /> 退出登录
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -137,11 +133,9 @@ export function TopNav({
                 <div className="font-medium">{user.name}</div>
                 <div className="text-slate-500">{ROLE_LABEL[user.role]}</div>
               </div>
-              <form action={signOutAction}>
-                <Button type="submit" variant="ghost" size="sm">
-                  <LogOut className="h-4 w-4 mr-1" /> 退出
-                </Button>
-              </form>
+              <Button onClick={doLogout} variant="ghost" size="sm">
+                <LogOut className="h-4 w-4 mr-1" /> 退出
+              </Button>
             </div>
           </nav>
         </div>
