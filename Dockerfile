@@ -6,8 +6,10 @@ WORKDIR /app
 RUN apk add --no-cache curl tini
 
 # 先装依赖（利用 docker 层缓存）
+# 用 npm install 而不是 npm ci：lockfile 可能跟 package.json 略有偏差时更宽容
+# --include=dev 确保 next/tsx/drizzle-kit 等 dev 依赖装上（build 和 seed 需要）
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm install --no-audit --no-fund --include=dev
 
 # 拷源码
 COPY . .
