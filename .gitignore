@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 本地 SQLite 演示数据库（由 scripts/seed-demo-data.ts 重建）
+/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
